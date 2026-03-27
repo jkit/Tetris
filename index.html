@@ -18,13 +18,130 @@
         color: #1f2937;
       }
 
+      main {
+        width: min(100%, 42rem);
+        padding: 2rem 1.5rem 3rem;
+        box-sizing: border-box;
+        display: grid;
+        justify-items: center;
+        gap: 1.5rem;
+      }
+
       h1 {
         margin: 0;
         font-size: clamp(3rem, 10vw, 5rem);
+        line-height: 1;
+      }
+
+      .stage-shell {
+        width: min(100%, 24rem);
+      }
+
+      .stage {
+        position: relative;
+        width: 100%;
+        aspect-ratio: var(--stage-columns) / var(--stage-rows);
+        box-sizing: border-box;
+        border: 0.45rem solid #334155;
+        border-radius: 1rem;
+        background-color: #60a5fa;
+        background-image:
+          linear-gradient(
+            rgba(255, 255, 255, 0.28) 0,
+            rgba(255, 255, 255, 0.28) 1px,
+            transparent 1px,
+            transparent 100%
+          ),
+          linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.28) 0,
+            rgba(255, 255, 255, 0.28) 1px,
+            transparent 1px,
+            transparent 100%
+          ),
+          linear-gradient(180deg, #93c5fd 0%, #60a5fa 100%);
+        background-size:
+          100% calc(100% / var(--stage-rows)),
+          calc(100% / var(--stage-columns)) 100%,
+          100% 100%;
+        box-shadow: 0 0.8rem 1.8rem rgba(15, 23, 42, 0.18);
+        overflow: hidden;
+      }
+
+      .piece {
+        position: absolute;
+        display: grid;
+        grid-template-columns: repeat(var(--piece-columns), 1fr);
+        grid-template-rows: repeat(var(--piece-rows), 1fr);
+        left: calc(var(--piece-column) * (100% / var(--stage-columns)));
+        top: calc(var(--piece-row) * (100% / var(--stage-rows)));
+        width: calc(var(--piece-columns) * (100% / var(--stage-columns)));
+        height: calc(var(--piece-rows) * (100% / var(--stage-rows)));
+      }
+
+      .piece-cell {
+        box-sizing: border-box;
+        border: 1px solid rgba(51, 65, 85, 0.35);
+        background: linear-gradient(180deg, #fde68a 0%, #fbbf24 100%);
+      }
+
+      @media (max-width: 600px) {
+        main {
+          padding: 1.5rem 1rem 2rem;
+        }
+
+        .stage-shell {
+          width: min(100%, 20rem);
+        }
       }
     </style>
   </head>
   <body>
-    <h1>Tetris</h1>
+    <main>
+      <h1>Tetris</h1>
+      <section class="stage-shell" aria-label="Tetris stage">
+        <div class="stage" id="stage">
+          <div class="piece" id="active-piece" aria-label="Square tetris piece"></div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const gameConfig = {
+        stageColumns: 10,
+        stageRows: 20,
+        activePiece: {
+          columns: 2,
+          rows: 2,
+          column: 4,
+          row: 0,
+        },
+      };
+
+      const stage = document.getElementById("stage");
+      const activePiece = document.getElementById("active-piece");
+
+      stage.style.setProperty("--stage-columns", gameConfig.stageColumns);
+      stage.style.setProperty("--stage-rows", gameConfig.stageRows);
+
+      activePiece.style.setProperty("--stage-columns", gameConfig.stageColumns);
+      activePiece.style.setProperty("--stage-rows", gameConfig.stageRows);
+      activePiece.style.setProperty(
+        "--piece-columns",
+        gameConfig.activePiece.columns
+      );
+      activePiece.style.setProperty("--piece-rows", gameConfig.activePiece.rows);
+      activePiece.style.setProperty(
+        "--piece-column",
+        gameConfig.activePiece.column
+      );
+      activePiece.style.setProperty("--piece-row", gameConfig.activePiece.row);
+
+      for (let index = 0; index < 4; index += 1) {
+        const pieceCell = document.createElement("div");
+        pieceCell.className = "piece-cell";
+        activePiece.append(pieceCell);
+      }
+    </script>
   </body>
 </html>
