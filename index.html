@@ -33,8 +33,105 @@
         line-height: 1;
       }
 
+      .controls {
+        width: min(100%, 24rem);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.85rem 1rem;
+        box-sizing: border-box;
+        border-radius: 0.9rem;
+        background: rgba(255, 255, 255, 0.65);
+      }
+
+      .controls label {
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .speed-input {
+        width: 5rem;
+        padding: 0.45rem 0.55rem;
+        font: inherit;
+        border: 2px solid #94a3b8;
+        border-radius: 0.7rem;
+        color: #1f2937;
+        background: #ffffff;
+      }
+
       .stage-shell {
         width: min(100%, 24rem);
+      }
+
+      .stage-area {
+        width: min(100%, 24rem);
+        display: grid;
+        gap: 0.9rem;
+      }
+
+      .playfield {
+        width: min(100%, 34rem);
+        display: grid;
+        grid-template-columns: auto minmax(0, 24rem) auto;
+        align-items: end;
+        gap: 1rem;
+      }
+
+      .button-stack {
+        display: grid;
+        gap: 0.85rem;
+        align-content: end;
+      }
+
+      .move-button {
+        width: 4.75rem;
+        height: 4.75rem;
+        display: grid;
+        place-items: center;
+        border: 0;
+        border-radius: 999px;
+        background: #1d4ed8;
+        color: #eff6ff;
+        box-shadow: 0 0.7rem 1.4rem rgba(29, 78, 216, 0.25);
+      }
+
+      .move-button:disabled {
+        opacity: 0.45;
+      }
+
+      .move-button svg {
+        width: 2.25rem;
+        height: 2.25rem;
+        stroke: currentColor;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+      }
+
+      .drop-button {
+        width: 100%;
+        min-height: 3.75rem;
+        border: 0;
+        border-radius: 0.9rem;
+        background: #0f766e;
+        color: #ecfeff;
+        font: inherit;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        box-shadow: 0 0.7rem 1.4rem rgba(15, 118, 110, 0.2);
+      }
+
+      .drop-button.active {
+        background: #ea580c;
+        color: #fff7ed;
+        box-shadow: 0 0.7rem 1.4rem rgba(234, 88, 12, 0.28);
+      }
+
+      .drop-button:disabled {
+        opacity: 0.45;
       }
 
       .stage {
@@ -70,6 +167,7 @@
 
       .piece {
         position: absolute;
+        z-index: 1;
         display: grid;
         grid-template-columns: repeat(var(--piece-columns), 1fr);
         grid-template-rows: repeat(var(--piece-rows), 1fr);
@@ -82,7 +180,45 @@
       .piece-cell {
         box-sizing: border-box;
         border: 1px solid rgba(51, 65, 85, 0.35);
-        background: linear-gradient(180deg, #fde68a 0%, #fbbf24 100%);
+        background: var(--piece-color, linear-gradient(180deg, #fde68a 0%, #fbbf24 100%));
+      }
+
+      .settled-cell {
+        position: absolute;
+        z-index: 1;
+        left: calc(var(--cell-column) * (100% / var(--stage-columns)));
+        top: calc(var(--cell-row) * (100% / var(--stage-rows)));
+        width: calc(100% / var(--stage-columns));
+        height: calc(100% / var(--stage-rows));
+        box-sizing: border-box;
+        border: 1px solid rgba(51, 65, 85, 0.35);
+        background: var(--cell-color, linear-gradient(180deg, #fde68a 0%, #fbbf24 100%));
+      }
+
+      .game-over {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        display: none;
+        place-items: center;
+        background: rgba(15, 23, 42, 0.55);
+      }
+
+      .game-over.visible {
+        display: grid;
+      }
+
+      .game-over-sign {
+        padding: 1rem 1.2rem;
+        border: 0.28rem solid #f8fafc;
+        border-radius: 0.85rem;
+        background: #dc2626;
+        color: #fef2f2;
+        font-size: clamp(1.5rem, 6vw, 2.3rem);
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        box-shadow: 0 0.7rem 1.6rem rgba(15, 23, 42, 0.35);
       }
 
       @media (max-width: 600px) {
@@ -93,55 +229,630 @@
         .stage-shell {
           width: min(100%, 20rem);
         }
+
+        .stage-area {
+          width: min(100%, 20rem);
+        }
+
+        .controls {
+          width: min(100%, 20rem);
+        }
+
+        .playfield {
+          width: min(100%, 24rem);
+          grid-template-columns: auto minmax(0, 1fr) auto;
+          gap: 0.85rem;
+        }
+
+        .button-stack {
+          gap: 0.65rem;
+        }
+
+        .move-button {
+          width: 3.5rem;
+          height: 4rem;
+        }
       }
     </style>
   </head>
   <body>
     <main>
       <h1>Tetris</h1>
-      <section class="stage-shell" aria-label="Tetris stage">
-        <div class="stage" id="stage">
-          <div class="piece" id="active-piece" aria-label="Square tetris piece"></div>
+      <div class="controls">
+        <label for="speed-input">Speed</label>
+        <input
+          class="speed-input"
+          id="speed-input"
+          type="number"
+          min="1"
+          max="10"
+          step="1"
+          value="1"
+        />
+      </div>
+      <div class="playfield">
+        <div class="button-stack">
+          <button class="move-button" id="rotate-left" type="button" aria-label="Rotate piece left">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M9 9a4.5 4.5 0 1 1-.4 6.1"></path>
+              <path d="M7.5 8.5v3h3"></path>
+            </svg>
+          </button>
+          <button class="move-button" id="move-left" type="button" aria-label="Move piece left">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M13.5 8 9.5 12l4 4"></path>
+            </svg>
+          </button>
         </div>
-      </section>
+        <div class="stage-area">
+          <section class="stage-shell" aria-label="Tetris stage">
+            <div class="stage" id="stage">
+              <div id="settled-layer"></div>
+              <div class="game-over" id="game-over" aria-hidden="true">
+                <div class="game-over-sign">Game Over</div>
+              </div>
+            </div>
+          </section>
+          <button class="drop-button" id="drop-button" type="button">
+            Drop Faster
+          </button>
+        </div>
+        <div class="button-stack">
+          <button class="move-button" id="rotate-right" type="button" aria-label="Rotate piece right">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M15 9a4.5 4.5 0 1 0 .4 6.1"></path>
+              <path d="M16.5 8.5v3h-3"></path>
+            </svg>
+          </button>
+          <button class="move-button" id="move-right" type="button" aria-label="Move piece right">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="m10.5 8 4 4-4 4"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
     </main>
 
     <script>
       const gameConfig = {
         stageColumns: 10,
         stageRows: 20,
-        activePiece: {
-          columns: 2,
-          rows: 2,
-          column: 4,
-          row: 0,
-        },
+        startingSpeed: 1,
+        tetrominoTemplates: [
+          {
+            name: "I tetromino",
+            columns: 4,
+            rows: 1,
+            cells: [[1, 1, 1, 1]],
+          },
+          {
+            name: "O tetromino",
+            columns: 2,
+            rows: 2,
+            cells: [
+              [1, 1],
+              [1, 1],
+            ],
+          },
+          {
+            name: "T tetromino",
+            columns: 3,
+            rows: 2,
+            cells: [
+              [1, 1, 1],
+              [0, 1, 0],
+            ],
+          },
+          {
+            name: "L tetromino",
+            columns: 3,
+            rows: 2,
+            cells: [
+              [1, 1, 1],
+              [1, 0, 0],
+            ],
+          },
+          {
+            name: "J tetromino",
+            columns: 3,
+            rows: 2,
+            cells: [
+              [1, 1, 1],
+              [0, 0, 1],
+            ],
+          },
+          {
+            name: "S tetromino",
+            columns: 3,
+            rows: 2,
+            cells: [
+              [0, 1, 1],
+              [1, 1, 0],
+            ],
+          },
+          {
+            name: "Z tetromino",
+            columns: 3,
+            rows: 2,
+            cells: [
+              [1, 1, 0],
+              [0, 1, 1],
+            ],
+          },
+        ],
       };
 
       const stage = document.getElementById("stage");
-      const activePiece = document.getElementById("active-piece");
+      const settledLayer = document.getElementById("settled-layer");
+      const gameOverElement = document.getElementById("game-over");
+      const dropButton = document.getElementById("drop-button");
+      const rotateLeftButton = document.getElementById("rotate-left");
+      const rotateRightButton = document.getElementById("rotate-right");
+      const moveLeftButton = document.getElementById("move-left");
+      const moveRightButton = document.getElementById("move-right");
+      const speedInput = document.getElementById("speed-input");
+      const settledCells = new Map();
+      let gameSpeed = gameConfig.startingSpeed;
+      let isDropButtonHeld = false;
+      let isGameOver = false;
+      let activePieceState = null;
 
       stage.style.setProperty("--stage-columns", gameConfig.stageColumns);
       stage.style.setProperty("--stage-rows", gameConfig.stageRows);
+      settledLayer.style.setProperty("--stage-columns", gameConfig.stageColumns);
+      settledLayer.style.setProperty("--stage-rows", gameConfig.stageRows);
+      speedInput.value = gameSpeed;
 
-      activePiece.style.setProperty("--stage-columns", gameConfig.stageColumns);
-      activePiece.style.setProperty("--stage-rows", gameConfig.stageRows);
-      activePiece.style.setProperty(
-        "--piece-columns",
-        gameConfig.activePiece.columns
-      );
-      activePiece.style.setProperty("--piece-rows", gameConfig.activePiece.rows);
-      activePiece.style.setProperty(
-        "--piece-column",
-        gameConfig.activePiece.column
-      );
-      activePiece.style.setProperty("--piece-row", gameConfig.activePiece.row);
+      function getFallDelayMs() {
+        if (isDropButtonHeld) {
+          return 1000 / 10;
+        }
 
-      for (let index = 0; index < 4; index += 1) {
-        const pieceCell = document.createElement("div");
-        pieceCell.className = "piece-cell";
-        activePiece.append(pieceCell);
+        return 1000 / gameSpeed;
       }
+
+      function getRandomNumber(max) {
+        return Math.floor(Math.random() * max);
+      }
+
+      function getRandomPieceColor() {
+        const hue = getRandomNumber(360);
+        return `linear-gradient(180deg, hsl(${hue} 80% 78%) 0%, hsl(${hue} 75% 52%) 100%)`;
+      }
+
+      function createRandomTetromino() {
+        const template =
+          gameConfig.tetrominoTemplates[
+            getRandomNumber(gameConfig.tetrominoTemplates.length)
+          ];
+        const centeredColumn = Math.floor(
+          (gameConfig.stageColumns - template.columns) / 2
+        );
+
+        return {
+          ...template,
+          color: getRandomPieceColor(),
+          column: centeredColumn,
+          row: 0,
+        };
+      }
+
+      function getOccupiedCellKey(row, column) {
+        return `${row}:${column}`;
+      }
+
+      function getPieceCellPositions(
+        pieceConfig,
+        pieceRow,
+        pieceColumn = pieceConfig.column,
+        pieceCells = pieceConfig.cells
+      ) {
+        const cellPositions = [];
+
+        for (let rowIndex = 0; rowIndex < pieceCells.length; rowIndex += 1) {
+          for (let columnIndex = 0; columnIndex < pieceCells[rowIndex].length; columnIndex += 1) {
+            if (!pieceCells[rowIndex][columnIndex]) {
+              continue;
+            }
+
+            cellPositions.push({
+              row: pieceRow + rowIndex,
+              column: pieceColumn + columnIndex,
+            });
+          }
+        }
+
+        return cellPositions;
+      }
+
+      function wouldOverlapExistingPiece(
+        pieceConfig,
+        nextRow,
+        nextColumn = pieceConfig.column,
+        nextCells = pieceConfig.cells
+      ) {
+        const nextPositions = getPieceCellPositions(
+          pieceConfig,
+          nextRow,
+          nextColumn,
+          nextCells
+        );
+
+        return nextPositions.some((cellPosition) => {
+          return settledCells.has(
+            getOccupiedCellKey(cellPosition.row, cellPosition.column)
+          );
+        });
+      }
+
+      function isPieceInsideStage(pieceConfig, pieceRow, pieceColumn, pieceCells) {
+        const piecePositions = getPieceCellPositions(
+          pieceConfig,
+          pieceRow,
+          pieceColumn,
+          pieceCells
+        );
+
+        return piecePositions.every((cellPosition) => {
+          return (
+            cellPosition.row >= 0 &&
+            cellPosition.row < gameConfig.stageRows &&
+            cellPosition.column >= 0 &&
+            cellPosition.column < gameConfig.stageColumns
+          );
+        });
+      }
+
+      function renderSettledCells() {
+        settledLayer.replaceChildren();
+
+        settledCells.forEach((cellColor, cellKey) => {
+          const [row, column] = cellKey.split(":").map(Number);
+          const settledCell = document.createElement("div");
+          settledCell.className = "settled-cell";
+          settledCell.style.setProperty("--cell-row", row);
+          settledCell.style.setProperty("--cell-column", column);
+          settledCell.style.setProperty("--cell-color", cellColor);
+          settledLayer.append(settledCell);
+        });
+      }
+
+      function clearCompletedRows() {
+        const completedRows = [];
+
+        for (let rowIndex = 0; rowIndex < gameConfig.stageRows; rowIndex += 1) {
+          let filledCellCount = 0;
+
+          for (let columnIndex = 0; columnIndex < gameConfig.stageColumns; columnIndex += 1) {
+            if (settledCells.has(getOccupiedCellKey(rowIndex, columnIndex))) {
+              filledCellCount += 1;
+            }
+          }
+
+          if (filledCellCount === gameConfig.stageColumns) {
+            completedRows.push(rowIndex);
+          }
+        }
+
+        if (completedRows.length === 0) {
+          return;
+        }
+
+        const shiftedCells = new Map();
+
+        settledCells.forEach((cellColor, cellKey) => {
+          const [row, column] = cellKey.split(":").map(Number);
+
+          if (completedRows.includes(row)) {
+            return;
+          }
+
+          const clearedRowsBelow = completedRows.filter(
+            (completedRow) => completedRow > row
+          ).length;
+          const nextRow = row + clearedRowsBelow;
+
+          shiftedCells.set(getOccupiedCellKey(nextRow, column), cellColor);
+        });
+
+        settledCells.clear();
+        shiftedCells.forEach((cellColor, cellKey) => {
+          settledCells.set(cellKey, cellColor);
+        });
+      }
+
+      function lockPiece(pieceConfig, pieceRow) {
+        const pieceCells = getPieceCellPositions(pieceConfig, pieceRow);
+
+        pieceCells.forEach((cellPosition) => {
+          settledCells.set(
+            getOccupiedCellKey(cellPosition.row, cellPosition.column),
+            pieceConfig.color
+          );
+        });
+
+        clearCompletedRows();
+        renderSettledCells();
+      }
+
+      function showGameOver() {
+        isGameOver = true;
+        gameOverElement.classList.add("visible");
+        gameOverElement.setAttribute("aria-hidden", "false");
+        speedInput.disabled = true;
+        dropButton.disabled = true;
+        rotateLeftButton.disabled = true;
+        rotateRightButton.disabled = true;
+        moveLeftButton.disabled = true;
+        moveRightButton.disabled = true;
+      }
+
+      function renderPieceElement(
+        pieceElement,
+        pieceConfig,
+        pieceRow = pieceConfig.row
+      ) {
+        pieceElement.style.setProperty("--stage-columns", gameConfig.stageColumns);
+        pieceElement.style.setProperty("--stage-rows", gameConfig.stageRows);
+        pieceElement.style.setProperty("--piece-columns", pieceConfig.columns);
+        pieceElement.style.setProperty("--piece-rows", pieceConfig.rows);
+        pieceElement.style.setProperty("--piece-column", pieceConfig.column);
+        pieceElement.style.setProperty("--piece-row", pieceRow);
+        pieceElement.style.setProperty("--piece-color", pieceConfig.color);
+        pieceElement.replaceChildren();
+
+        for (let rowIndex = 0; rowIndex < pieceConfig.rows; rowIndex += 1) {
+          for (let columnIndex = 0; columnIndex < pieceConfig.columns; columnIndex += 1) {
+            if (!pieceConfig.cells[rowIndex][columnIndex]) {
+              continue;
+            }
+
+            const pieceCell = document.createElement("div");
+            pieceCell.className = "piece-cell";
+            pieceCell.style.gridColumn = columnIndex + 1;
+            pieceCell.style.gridRow = rowIndex + 1;
+            pieceElement.append(pieceCell);
+          }
+        }
+      }
+
+      function createPieceElement(pieceConfig) {
+        const pieceElement = document.createElement("div");
+        pieceElement.className = "piece";
+        pieceElement.setAttribute("aria-label", pieceConfig.name);
+        renderPieceElement(pieceElement, pieceConfig, pieceConfig.row);
+        return pieceElement;
+      }
+
+      function rotateCellsRight(cells) {
+        const rotated = [];
+        const nextRowCount = cells[0].length;
+        const nextColumnCount = cells.length;
+
+        for (let rowIndex = 0; rowIndex < nextRowCount; rowIndex += 1) {
+          rotated[rowIndex] = [];
+
+          for (let columnIndex = 0; columnIndex < nextColumnCount; columnIndex += 1) {
+            rotated[rowIndex][columnIndex] =
+              cells[nextColumnCount - columnIndex - 1][rowIndex];
+          }
+        }
+
+        return rotated;
+      }
+
+      function rotateCellsLeft(cells) {
+        const rotated = [];
+        const nextRowCount = cells[0].length;
+        const nextColumnCount = cells.length;
+
+        for (let rowIndex = 0; rowIndex < nextRowCount; rowIndex += 1) {
+          rotated[rowIndex] = [];
+
+          for (let columnIndex = 0; columnIndex < nextColumnCount; columnIndex += 1) {
+            rotated[rowIndex][columnIndex] =
+              cells[columnIndex][nextRowCount - rowIndex - 1];
+          }
+        }
+
+        return rotated;
+      }
+
+      function dropPiece(pieceConfig, onComplete) {
+        const pieceElement = createPieceElement(pieceConfig);
+        let pieceRow = pieceConfig.row;
+
+        stage.append(pieceElement);
+        activePieceState = {
+          pieceConfig,
+          pieceElement,
+          pieceRow,
+        };
+
+        function movePieceDown() {
+          const nextRow = pieceRow + 1;
+          const lastOpenRow = gameConfig.stageRows - pieceConfig.rows;
+
+          if (
+            isGameOver ||
+            pieceRow >= lastOpenRow ||
+            wouldOverlapExistingPiece(pieceConfig, nextRow)
+          ) {
+            pieceElement.remove();
+            lockPiece(pieceConfig, pieceRow);
+            activePieceState = null;
+            onComplete();
+            return;
+          }
+
+          pieceRow = nextRow;
+          activePieceState.pieceRow = pieceRow;
+          pieceElement.style.setProperty("--piece-row", pieceRow);
+          window.setTimeout(movePieceDown, getFallDelayMs());
+        }
+
+        window.setTimeout(movePieceDown, getFallDelayMs());
+      }
+
+      function startPieceSequence() {
+        if (isGameOver) {
+          return;
+        }
+
+        const nextPiece = createRandomTetromino();
+
+        if (wouldOverlapExistingPiece(nextPiece, nextPiece.row)) {
+          showGameOver();
+          return;
+        }
+
+        dropPiece(nextPiece, () => {
+          if (isGameOver) {
+            return;
+          }
+
+          window.setTimeout(startPieceSequence, 0);
+        });
+      }
+
+      function moveActivePiece(columnChange) {
+        if (!activePieceState || isGameOver) {
+          return;
+        }
+
+        const nextColumn = activePieceState.pieceConfig.column + columnChange;
+        const furthestColumn =
+          gameConfig.stageColumns - activePieceState.pieceConfig.columns;
+
+        if (nextColumn < 0 || nextColumn > furthestColumn) {
+          return;
+        }
+
+        if (
+          wouldOverlapExistingPiece(
+            activePieceState.pieceConfig,
+            activePieceState.pieceRow,
+            nextColumn
+          )
+        ) {
+          return;
+        }
+
+        activePieceState.pieceConfig.column = nextColumn;
+        activePieceState.pieceElement.style.setProperty(
+          "--piece-column",
+          nextColumn
+        );
+      }
+
+      function rotateActivePiece(direction) {
+        if (!activePieceState || isGameOver) {
+          return;
+        }
+
+        const nextCells =
+          direction === "right"
+            ? rotateCellsRight(activePieceState.pieceConfig.cells)
+            : rotateCellsLeft(activePieceState.pieceConfig.cells);
+        const nextRows = nextCells.length;
+        const nextColumns = nextCells[0].length;
+        const nextPieceConfig = {
+          ...activePieceState.pieceConfig,
+          rows: nextRows,
+          columns: nextColumns,
+          cells: nextCells,
+        };
+
+        if (
+          wouldOverlapExistingPiece(
+            nextPieceConfig,
+            activePieceState.pieceRow,
+            activePieceState.pieceConfig.column,
+            nextCells
+          ) ||
+          !isPieceInsideStage(
+            nextPieceConfig,
+            activePieceState.pieceRow,
+            activePieceState.pieceConfig.column,
+            nextCells
+          )
+        ) {
+          return;
+        }
+
+        activePieceState.pieceConfig.rows = nextRows;
+        activePieceState.pieceConfig.columns = nextColumns;
+        activePieceState.pieceConfig.cells = nextCells;
+        renderPieceElement(
+          activePieceState.pieceElement,
+          activePieceState.pieceConfig,
+          activePieceState.pieceRow
+        );
+      }
+
+      function startFastDrop() {
+        if (isGameOver) {
+          return;
+        }
+
+        isDropButtonHeld = true;
+        dropButton.classList.add("active");
+      }
+
+      function stopFastDrop() {
+        isDropButtonHeld = false;
+        dropButton.classList.remove("active");
+      }
+
+      speedInput.addEventListener("input", () => {
+        const nextSpeed = Number(speedInput.value);
+
+        if (Number.isNaN(nextSpeed) || nextSpeed < 1) {
+          gameSpeed = 1;
+          speedInput.value = gameSpeed;
+          return;
+        }
+
+        gameSpeed = nextSpeed;
+      });
+
+      moveLeftButton.addEventListener("click", () => {
+        moveActivePiece(-1);
+      });
+
+      moveRightButton.addEventListener("click", () => {
+        moveActivePiece(1);
+      });
+
+      rotateLeftButton.addEventListener("click", () => {
+        rotateActivePiece("left");
+      });
+
+      rotateRightButton.addEventListener("click", () => {
+        rotateActivePiece("right");
+      });
+
+      dropButton.addEventListener("pointerdown", () => {
+        startFastDrop();
+      });
+
+      dropButton.addEventListener("pointerup", () => {
+        stopFastDrop();
+      });
+
+      dropButton.addEventListener("pointerleave", () => {
+        stopFastDrop();
+      });
+
+      dropButton.addEventListener("pointercancel", () => {
+        stopFastDrop();
+      });
+
+      startPieceSequence();
     </script>
   </body>
 </html>
