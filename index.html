@@ -7,86 +7,234 @@
     <style>
       :root {
         font-family: Arial, sans-serif;
+        --page-padding-block: clamp(0.75rem, 2.5dvh, 2rem);
+        --page-padding-inline: clamp(0.75rem, 2.5vw, 1.5rem);
+        --controls-width: min(100%, 24rem);
+        --button-size: clamp(3.5rem, 10vw, 4.75rem);
+        --button-gap: clamp(0.65rem, 2dvh, 0.85rem);
+        --playfield-gap: clamp(0.75rem, 2vw, 1rem);
+        --drop-button-height: clamp(3.25rem, 9dvh, 3.75rem);
+        --footer-reserved-space: 3.5rem;
+        --score-panel-width: clamp(8.75rem, 18vw, 10rem);
+        --stage-max-width: min(
+          24rem,
+          calc((100dvh - 10.5rem - var(--footer-reserved-space)) / 2),
+          calc((100vw - (2 * var(--page-padding-inline)) - (2 * var(--button-size)) - (2 * var(--playfield-gap))))
+        );
+      }
+
+      html {
+        height: 100%;
+        overflow: hidden;
       }
 
       body {
         margin: 0;
-        min-height: 100vh;
+        min-height: 100dvh;
+        height: 100dvh;
         display: grid;
         place-items: center;
         background: #f4efe3;
         color: #1f2937;
+        overflow: hidden;
+        overscroll-behavior: none;
+        touch-action: manipulation;
       }
 
       main {
         width: min(100%, 42rem);
-        padding: 2rem 1.5rem 3rem;
+        height: 100%;
+        max-height: 100dvh;
+        padding:
+          calc(var(--page-padding-block) + env(safe-area-inset-top))
+          calc(var(--page-padding-inline) + env(safe-area-inset-right))
+          calc(var(--page-padding-block) + env(safe-area-inset-bottom) + var(--footer-reserved-space))
+          calc(var(--page-padding-inline) + env(safe-area-inset-left));
         box-sizing: border-box;
         display: grid;
+        align-content: center;
         justify-items: center;
-        gap: 1.5rem;
-      }
-
-      h1 {
-        margin: 0;
-        font-size: clamp(3rem, 10vw, 5rem);
-        line-height: 1;
+        overflow: hidden;
       }
 
       .controls {
-        width: min(100%, 24rem);
+        position: fixed;
+        left: calc(0.9rem + env(safe-area-inset-left));
+        bottom: calc(0.75rem + env(safe-area-inset-bottom));
+        z-index: 3;
+        width: auto;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 0.85rem 1rem;
+        gap: 0.55rem;
+        padding: 0.45rem 0.6rem;
         box-sizing: border-box;
-        border-radius: 0.9rem;
-        background: rgba(255, 255, 255, 0.65);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        box-shadow: 0 0.35rem 0.9rem rgba(15, 23, 42, 0.08);
+        backdrop-filter: blur(6px);
+      }
+
+      .audio-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding-left: 0.1rem;
+        border-left: 1px solid rgba(148, 163, 184, 0.28);
+      }
+
+      .mute-button {
+        min-width: 2.2rem;
+        height: 2rem;
+        padding: 0 0.55rem;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.78);
+        color: #475569;
+        font: inherit;
+        font-size: 0.9rem;
+        line-height: 1;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+      }
+
+      .mute-button.active {
+        background: rgba(226, 232, 240, 0.9);
+        color: #0f172a;
+      }
+
+      .volume-slider {
+        width: 4.8rem;
+        accent-color: #64748b;
+      }
+
+      .score-panel {
+        position: relative;
+        width: 100%;
+        min-width: 0;
+        padding: 0.8rem 0.95rem 0.9rem;
+        box-sizing: border-box;
+        border: 2px solid rgba(30, 41, 59, 0.9);
+        border-radius: 1rem;
+        background:
+          linear-gradient(180deg, rgba(255, 247, 237, 0.96) 0%, rgba(254, 215, 170, 0.92) 100%);
+        box-shadow:
+          0 0 0 0.18rem rgba(251, 146, 60, 0.35),
+          0 0.8rem 1.6rem rgba(15, 23, 42, 0.16);
+        overflow: hidden;
+      }
+
+      .score-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.24) 0,
+            rgba(255, 255, 255, 0.24) 1px,
+            transparent 1px,
+            transparent 100%
+          );
+        background-size: 100% 0.34rem;
+        opacity: 0.45;
+        pointer-events: none;
+      }
+
+      .score-label,
+      .score-value {
+        position: relative;
+        z-index: 1;
+      }
+
+      .score-label {
+        display: block;
+        margin-bottom: 0.45rem;
+        color: #7c2d12;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      .score-value {
+        display: block;
+        color: #111827;
+        font-size: clamp(1.8rem, 4vw, 2.4rem);
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: 0.08em;
+        text-shadow:
+          2px 2px 0 rgba(255, 255, 255, 0.7),
+          4px 4px 0 rgba(124, 45, 18, 0.12);
       }
 
       .controls label {
-        font-size: 1rem;
+        font-size: 0.78rem;
         font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: rgba(51, 65, 85, 0.72);
       }
 
       .speed-input {
-        width: 5rem;
-        padding: 0.45rem 0.55rem;
+        width: 3.25rem;
+        padding: 0.25rem 0.35rem;
         font: inherit;
-        border: 2px solid #94a3b8;
-        border-radius: 0.7rem;
+        border: 1px solid rgba(148, 163, 184, 0.45);
+        border-radius: 0.55rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-align: center;
         color: #1f2937;
-        background: #ffffff;
+        background: rgba(255, 255, 255, 0.9);
       }
 
       .stage-shell {
-        width: min(100%, 24rem);
+        width: min(100%, var(--stage-max-width));
       }
 
       .stage-area {
-        width: min(100%, 24rem);
+        width: min(100%, var(--stage-max-width));
         display: grid;
         gap: 0.9rem;
+        align-content: end;
       }
 
       .playfield {
-        width: min(100%, 34rem);
+        width: 100%;
+        max-width: 34rem;
         display: grid;
-        grid-template-columns: auto minmax(0, 24rem) auto;
-        align-items: end;
-        gap: 1rem;
+        grid-template-columns:
+          max(var(--button-size), var(--score-panel-width))
+          minmax(0, var(--stage-max-width))
+          max(var(--button-size), var(--score-panel-width));
+        align-items: stretch;
+        justify-content: center;
+        gap: var(--playfield-gap);
+        min-height: 0;
       }
 
       .button-stack {
         display: grid;
-        gap: 0.85rem;
+        gap: var(--button-gap);
         align-content: end;
+        justify-items: start;
+      }
+
+      .left-stack {
+        justify-items: end;
+      }
+
+      .side-rail {
+        display: grid;
+        align-content: space-between;
       }
 
       .move-button {
-        width: 4.75rem;
-        height: 4.75rem;
+        width: var(--button-size);
+        height: var(--button-size);
         display: grid;
         place-items: center;
         border: 0;
@@ -112,7 +260,7 @@
 
       .drop-button {
         width: 100%;
-        min-height: 3.75rem;
+        min-height: var(--drop-button-height);
         border: 0;
         border-radius: 0.9rem;
         background: #0f766e;
@@ -122,6 +270,10 @@
         letter-spacing: 0.04em;
         text-transform: uppercase;
         box-shadow: 0 0.7rem 1.4rem rgba(15, 118, 110, 0.2);
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        touch-action: manipulation;
       }
 
       .drop-button.active {
@@ -208,6 +360,35 @@
         display: grid;
       }
 
+      .start-screen {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        display: grid;
+        place-items: center;
+        padding: 1rem;
+        background: rgba(15, 23, 42, 0.45);
+      }
+
+      .start-screen.hidden {
+        display: none;
+      }
+
+      .start-button {
+        padding: 0.7rem 1.2rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.5rem;
+        background: #ffffff;
+        color: #111827;
+        font: inherit;
+        font-size: 1rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+      }
+
       .game-over-sign {
         padding: 1rem 1.2rem;
         border: 0.28rem solid #f8fafc;
@@ -221,75 +402,188 @@
         box-shadow: 0 0.7rem 1.6rem rgba(15, 23, 42, 0.35);
       }
 
+      .win-toast {
+        position: fixed;
+        top: calc(1rem + env(safe-area-inset-top));
+        left: 50%;
+        z-index: 4;
+        transform: translate(-50%, -1rem);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.7rem;
+        padding: 0.95rem 1.4rem;
+        border: 2px solid rgba(255, 255, 255, 0.75);
+        border-radius: 999px;
+        background:
+          radial-gradient(circle at top left, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.1) 32%, transparent 52%),
+          linear-gradient(135deg, rgba(244, 114, 182, 0.96) 0%, rgba(249, 115, 22, 0.96) 38%, rgba(250, 204, 21, 0.97) 68%, rgba(45, 212, 191, 0.96) 100%);
+        color: #fffaf0;
+        box-shadow:
+          0 0 0 0.2rem rgba(255, 255, 255, 0.22),
+          0 1rem 2.4rem rgba(217, 70, 239, 0.24),
+          0 0.35rem 0.9rem rgba(15, 23, 42, 0.16);
+        backdrop-filter: blur(10px);
+        font-size: 1.02rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        text-shadow: 0 2px 10px rgba(124, 45, 18, 0.28);
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity 220ms ease,
+          transform 220ms ease;
+      }
+
+      .win-toast.visible {
+        opacity: 1;
+        transform: translate(-50%, 0);
+        animation: win-toast-bob 900ms ease-in-out infinite alternate;
+      }
+
+      .win-toast::before,
+      .win-toast::after {
+        font-size: 1.15rem;
+        line-height: 1;
+        filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.32));
+      }
+
+      .win-toast::before {
+        content: "★";
+        color: #fef08a;
+      }
+
+      .win-toast::after {
+        content: "✦";
+        color: #d9f99d;
+      }
+
+      @keyframes win-toast-bob {
+        from {
+          transform: translate(-50%, -0.15rem) scale(1);
+        }
+
+        to {
+          transform: translate(-50%, 0.18rem) scale(1.03);
+        }
+      }
+
+      .credit {
+        position: fixed;
+        bottom: calc(0.75rem + env(safe-area-inset-bottom));
+        right: calc(0.9rem + env(safe-area-inset-right));
+        z-index: 3;
+        padding: 0.4rem 0.7rem;
+        border: 1px solid rgba(190, 24, 93, 0.14);
+        border-radius: 999px;
+        background: rgba(255, 251, 251, 0.78);
+        box-shadow: 0 0.35rem 0.9rem rgba(190, 24, 93, 0.08);
+        backdrop-filter: blur(6px);
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.015em;
+        color: rgba(159, 18, 57, 0.72);
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+        pointer-events: none;
+        user-select: none;
+        white-space: nowrap;
+      }
+
       @media (max-width: 600px) {
         main {
-          padding: 1.5rem 1rem 2rem;
+          gap: 1rem;
         }
 
-        .stage-shell {
-          width: min(100%, 20rem);
-        }
-
-        .stage-area {
-          width: min(100%, 20rem);
+        :root {
+          --controls-width: min(100%, 20rem);
+          --button-size: clamp(3rem, 12vw, 3.5rem);
+          --stage-max-width: min(
+            20rem,
+            calc((100dvh - 9.5rem - var(--footer-reserved-space)) / 2),
+            calc((100vw - (2 * var(--page-padding-inline)) - (2 * var(--button-size)) - (2 * var(--playfield-gap))))
+          );
         }
 
         .controls {
-          width: min(100%, 20rem);
+          gap: 0.45rem;
+          padding: 0.38rem 0.5rem;
         }
 
-        .playfield {
-          width: min(100%, 24rem);
-          grid-template-columns: auto minmax(0, 1fr) auto;
-          gap: 0.85rem;
+        .audio-controls {
+          gap: 0.35rem;
         }
 
-        .button-stack {
-          gap: 0.65rem;
+        .controls label {
+          font-size: 0.72rem;
         }
 
-        .move-button {
-          width: 3.5rem;
-          height: 4rem;
+        .speed-input {
+          width: 3rem;
+          font-size: 0.82rem;
+        }
+
+        .credit {
+          font-size: 0.74rem;
+          padding: 0.35rem 0.6rem;
         }
       }
     </style>
   </head>
   <body>
-    <main>
-      <h1>Tetris</h1>
-      <div class="controls">
-        <label for="speed-input">Speed</label>
+    <div class="controls">
+      <label for="speed-input">Speed</label>
+      <input
+        class="speed-input"
+        id="speed-input"
+        type="number"
+        min="1"
+        max="10"
+        step="1"
+        value="1"
+      />
+      <div class="audio-controls" aria-label="Music controls">
+        <button class="mute-button" id="mute-button" type="button" aria-label="Mute music">
+          ♪
+        </button>
         <input
-          class="speed-input"
-          id="speed-input"
-          type="number"
-          min="1"
-          max="10"
+          class="volume-slider"
+          id="volume-slider"
+          type="range"
+          min="0"
+          max="100"
           step="1"
-          value="1"
+          value="40"
+          aria-label="Music volume"
         />
       </div>
+    </div>
+    <main>
       <div class="playfield">
-        <div class="button-stack">
-          <button class="move-button" id="rotate-left" type="button" aria-label="Rotate piece left">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="9"></circle>
-              <path d="M9 9a4.5 4.5 0 1 1-.4 6.1"></path>
-              <path d="M7.5 8.5v3h3"></path>
-            </svg>
-          </button>
-          <button class="move-button" id="move-left" type="button" aria-label="Move piece left">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="9"></circle>
-              <path d="M13.5 8 9.5 12l4 4"></path>
-            </svg>
-          </button>
+        <div class="side-rail">
+          <div aria-hidden="true"></div>
+          <div class="button-stack left-stack">
+            <button class="move-button" id="rotate-left" type="button" aria-label="Rotate piece left">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M9 9a4.5 4.5 0 1 1-.4 6.1"></path>
+                <path d="M7.5 8.5v3h3"></path>
+              </svg>
+            </button>
+            <button class="move-button" id="move-left" type="button" aria-label="Move piece left">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M13.5 8 9.5 12l4 4"></path>
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="stage-area">
           <section class="stage-shell" aria-label="Tetris stage">
             <div class="stage" id="stage">
               <div id="settled-layer"></div>
+              <div class="start-screen" id="start-screen">
+                <button class="start-button" id="start-button" type="button">Start Game</button>
+              </div>
               <div class="game-over" id="game-over" aria-hidden="true">
                 <div class="game-over-sign">Game Over</div>
               </div>
@@ -299,23 +593,32 @@
             Drop Faster
           </button>
         </div>
-        <div class="button-stack">
-          <button class="move-button" id="rotate-right" type="button" aria-label="Rotate piece right">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="9"></circle>
-              <path d="M15 9a4.5 4.5 0 1 0 .4 6.1"></path>
-              <path d="M16.5 8.5v3h-3"></path>
-            </svg>
-          </button>
-          <button class="move-button" id="move-right" type="button" aria-label="Move piece right">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="9"></circle>
-              <path d="m10.5 8 4 4-4 4"></path>
-            </svg>
-          </button>
+        <div class="side-rail">
+          <aside class="score-panel" aria-label="Score display">
+            <span class="score-label">Score</span>
+            <span class="score-value" id="score-value">0</span>
+          </aside>
+          <div class="button-stack">
+            <button class="move-button" id="rotate-right" type="button" aria-label="Rotate piece right">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M15 9a4.5 4.5 0 1 0 .4 6.1"></path>
+                <path d="M16.5 8.5v3h-3"></path>
+              </svg>
+            </button>
+            <button class="move-button" id="move-right" type="button" aria-label="Move piece right">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="m10.5 8 4 4-4 4"></path>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </main>
+    <audio id="game-music" src="music.mp3" loop preload="auto"></audio>
+    <div class="win-toast" id="win-toast" role="status" aria-live="polite">You win!</div>
+    <div class="credit" aria-hidden="true">Made by Kepler &amp; Dada.</div>
 
     <script>
       const gameConfig = {
@@ -388,7 +691,14 @@
 
       const stage = document.getElementById("stage");
       const settledLayer = document.getElementById("settled-layer");
+      const startScreenElement = document.getElementById("start-screen");
+      const startButton = document.getElementById("start-button");
       const gameOverElement = document.getElementById("game-over");
+      const gameMusic = document.getElementById("game-music");
+      const muteButton = document.getElementById("mute-button");
+      const volumeSlider = document.getElementById("volume-slider");
+      const scoreValueElement = document.getElementById("score-value");
+      const winToastElement = document.getElementById("win-toast");
       const dropButton = document.getElementById("drop-button");
       const rotateLeftButton = document.getElementById("rotate-left");
       const rotateRightButton = document.getElementById("rotate-right");
@@ -398,14 +708,43 @@
       const settledCells = new Map();
       let gameSpeed = gameConfig.startingSpeed;
       let isDropButtonHeld = false;
+      let hasGameStarted = false;
       let isGameOver = false;
       let activePieceState = null;
+      let score = 0;
+      let hasWon = false;
+      let winToastTimeoutId = null;
+      const controlRepeatDelayMs = 180;
+      const controlRepeatIntervalMs = 90;
 
       stage.style.setProperty("--stage-columns", gameConfig.stageColumns);
       stage.style.setProperty("--stage-rows", gameConfig.stageRows);
       settledLayer.style.setProperty("--stage-columns", gameConfig.stageColumns);
       settledLayer.style.setProperty("--stage-rows", gameConfig.stageRows);
       speedInput.value = gameSpeed;
+      gameMusic.volume = Number(volumeSlider.value) / 100;
+
+      function syncMusicControls() {
+        const isMuted = gameMusic.muted || gameMusic.volume === 0;
+        muteButton.classList.toggle("active", isMuted);
+        muteButton.textContent = isMuted ? "×" : "♪";
+        muteButton.setAttribute(
+          "aria-label",
+          isMuted ? "Unmute music" : "Mute music"
+        );
+      }
+
+      syncMusicControls();
+
+      function setControlsEnabled(isEnabled) {
+        dropButton.disabled = !isEnabled;
+        rotateLeftButton.disabled = !isEnabled;
+        rotateRightButton.disabled = !isEnabled;
+        moveLeftButton.disabled = !isEnabled;
+        moveRightButton.disabled = !isEnabled;
+      }
+
+      setControlsEnabled(false);
 
       function getFallDelayMs() {
         if (isDropButtonHeld) {
@@ -521,6 +860,29 @@
         });
       }
 
+      function updateScore(pointsToAdd) {
+        score += pointsToAdd;
+        scoreValueElement.textContent = String(score);
+
+        if (!hasWon && score >= 100) {
+          hasWon = true;
+          showWinToast();
+        }
+      }
+
+      function showWinToast() {
+        winToastElement.classList.add("visible");
+
+        if (winToastTimeoutId !== null) {
+          window.clearTimeout(winToastTimeoutId);
+        }
+
+        winToastTimeoutId = window.setTimeout(() => {
+          winToastElement.classList.remove("visible");
+          winToastTimeoutId = null;
+        }, 10000);
+      }
+
       function clearCompletedRows() {
         const completedRows = [];
 
@@ -563,6 +925,8 @@
         shiftedCells.forEach((cellColor, cellKey) => {
           settledCells.set(cellKey, cellColor);
         });
+
+        updateScore(completedRows.length * 5);
       }
 
       function lockPiece(pieceConfig, pieceRow) {
@@ -584,11 +948,29 @@
         gameOverElement.classList.add("visible");
         gameOverElement.setAttribute("aria-hidden", "false");
         speedInput.disabled = true;
-        dropButton.disabled = true;
-        rotateLeftButton.disabled = true;
-        rotateRightButton.disabled = true;
-        moveLeftButton.disabled = true;
-        moveRightButton.disabled = true;
+        setControlsEnabled(false);
+      }
+
+      function startGame() {
+        if (hasGameStarted) {
+          return;
+        }
+
+        hasGameStarted = true;
+        startScreenElement.classList.add("hidden");
+        startScreenElement.setAttribute("aria-hidden", "true");
+        setControlsEnabled(true);
+        speedInput.disabled = false;
+
+        const playPromise = gameMusic.play();
+
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(() => {
+            // Ignore autoplay/playback failures so the game can still start.
+          });
+        }
+
+        startPieceSequence();
       }
 
       function renderPieceElement(
@@ -662,36 +1044,49 @@
         return rotated;
       }
 
+      function advanceActivePieceOneRow() {
+        if (!activePieceState || isGameOver) {
+          return false;
+        }
+
+        const nextRow = activePieceState.pieceRow + 1;
+        const lastOpenRow =
+          gameConfig.stageRows - activePieceState.pieceConfig.rows;
+
+        if (
+          activePieceState.pieceRow >= lastOpenRow ||
+          wouldOverlapExistingPiece(activePieceState.pieceConfig, nextRow)
+        ) {
+          return false;
+        }
+
+        activePieceState.pieceRow = nextRow;
+        activePieceState.pieceElement.style.setProperty(
+          "--piece-row",
+          activePieceState.pieceRow
+        );
+        return true;
+      }
+
       function dropPiece(pieceConfig, onComplete) {
         const pieceElement = createPieceElement(pieceConfig);
-        let pieceRow = pieceConfig.row;
 
         stage.append(pieceElement);
         activePieceState = {
           pieceConfig,
           pieceElement,
-          pieceRow,
+          pieceRow: pieceConfig.row,
         };
 
         function movePieceDown() {
-          const nextRow = pieceRow + 1;
-          const lastOpenRow = gameConfig.stageRows - pieceConfig.rows;
-
-          if (
-            isGameOver ||
-            pieceRow >= lastOpenRow ||
-            wouldOverlapExistingPiece(pieceConfig, nextRow)
-          ) {
+          if (isGameOver || !advanceActivePieceOneRow()) {
             pieceElement.remove();
-            lockPiece(pieceConfig, pieceRow);
+            lockPiece(pieceConfig, activePieceState.pieceRow);
             activePieceState = null;
             onComplete();
             return;
           }
 
-          pieceRow = nextRow;
-          activePieceState.pieceRow = pieceRow;
-          pieceElement.style.setProperty("--piece-row", pieceRow);
           window.setTimeout(movePieceDown, getFallDelayMs());
         }
 
@@ -808,6 +1203,90 @@
         dropButton.classList.remove("active");
       }
 
+      function createRepeatingPointerControl(
+        button,
+        onTap,
+        onHoldStart,
+        onHoldEnd,
+        shouldRepeatTapOnHold = true
+      ) {
+        let repeatDelayTimeoutId = null;
+        let repeatIntervalId = null;
+        let activePointerId = null;
+
+        function clearRepeatTimers() {
+          if (repeatDelayTimeoutId !== null) {
+            window.clearTimeout(repeatDelayTimeoutId);
+            repeatDelayTimeoutId = null;
+          }
+
+          if (repeatIntervalId !== null) {
+            window.clearInterval(repeatIntervalId);
+            repeatIntervalId = null;
+          }
+        }
+
+        function endPress(pointerId) {
+          if (activePointerId !== null && pointerId !== undefined && pointerId !== activePointerId) {
+            return;
+          }
+
+          clearRepeatTimers();
+          activePointerId = null;
+
+          if (onHoldEnd) {
+            onHoldEnd();
+          }
+        }
+
+        button.addEventListener("pointerdown", (event) => {
+          if (event.button !== 0 || activePointerId !== null) {
+            return;
+          }
+
+          event.preventDefault();
+          activePointerId = event.pointerId;
+          if (button.setPointerCapture) {
+            button.setPointerCapture(event.pointerId);
+          }
+          onTap();
+
+          repeatDelayTimeoutId = window.setTimeout(() => {
+            if (activePointerId !== event.pointerId) {
+              return;
+            }
+
+            if (onHoldStart) {
+              onHoldStart();
+            }
+
+            if (!shouldRepeatTapOnHold) {
+              return;
+            }
+
+            repeatIntervalId = window.setInterval(() => {
+              if (activePointerId !== event.pointerId) {
+                return;
+              }
+
+              onTap();
+            }, controlRepeatIntervalMs);
+          }, controlRepeatDelayMs);
+        });
+
+        button.addEventListener("pointerup", (event) => {
+          endPress(event.pointerId);
+        });
+
+        button.addEventListener("pointercancel", (event) => {
+          endPress(event.pointerId);
+        });
+
+        button.addEventListener("lostpointercapture", () => {
+          endPress();
+        });
+      }
+
       speedInput.addEventListener("input", () => {
         const nextSpeed = Number(speedInput.value);
 
@@ -820,12 +1299,16 @@
         gameSpeed = nextSpeed;
       });
 
-      moveLeftButton.addEventListener("click", () => {
-        moveActivePiece(-1);
+      volumeSlider.addEventListener("input", () => {
+        const nextVolume = Number(volumeSlider.value) / 100;
+        gameMusic.volume = nextVolume;
+        gameMusic.muted = nextVolume === 0;
+        syncMusicControls();
       });
 
-      moveRightButton.addEventListener("click", () => {
-        moveActivePiece(1);
+      muteButton.addEventListener("click", () => {
+        gameMusic.muted = !gameMusic.muted;
+        syncMusicControls();
       });
 
       rotateLeftButton.addEventListener("click", () => {
@@ -836,23 +1319,41 @@
         rotateActivePiece("right");
       });
 
-      dropButton.addEventListener("pointerdown", () => {
-        startFastDrop();
+      startButton.addEventListener("click", () => {
+        startGame();
       });
 
-      dropButton.addEventListener("pointerup", () => {
-        stopFastDrop();
-      });
+      createRepeatingPointerControl(
+        moveLeftButton,
+        () => {
+          moveActivePiece(-1);
+        }
+      );
 
-      dropButton.addEventListener("pointerleave", () => {
-        stopFastDrop();
-      });
+      createRepeatingPointerControl(
+        moveRightButton,
+        () => {
+          moveActivePiece(1);
+        }
+      );
 
-      dropButton.addEventListener("pointercancel", () => {
-        stopFastDrop();
-      });
+      createRepeatingPointerControl(
+        dropButton,
+        () => {
+          advanceActivePieceOneRow();
+        },
+        () => {
+          startFastDrop();
+        },
+        () => {
+          stopFastDrop();
+        },
+        false
+      );
 
-      startPieceSequence();
+      dropButton.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+      });
     </script>
   </body>
 </html>
