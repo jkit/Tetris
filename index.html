@@ -905,7 +905,6 @@
       isGameOver = true;
       gameOverElement.classList.add("visible");
       gameOverElement.setAttribute("aria-hidden", "false");
-      speedInput.disabled = true;
       setControlsEnabled(false);
     }
 
@@ -918,7 +917,6 @@
       startScreenElement.classList.add("hidden");
       startScreenElement.setAttribute("aria-hidden", "true");
       setControlsEnabled(true);
-      speedInput.disabled = false;
 
       const playPromise = gameMusic.play();
 
