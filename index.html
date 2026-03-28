@@ -60,7 +60,14 @@
       overflow: hidden;
     }
 
-    .mute-button {
+    .footer-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+
+    .mute-button,
+    .pause-button {
       min-width: 2.8rem;
       height: 2.5rem;
       padding: 0 0.8rem;
@@ -81,8 +88,6 @@
       -webkit-user-select: none;
       -webkit-touch-callout: none;
     }
-
-
 
     .mute-button.active {
       background: rgba(226, 232, 240, 0.9);
@@ -358,6 +363,20 @@
       display: none;
     }
 
+    .pause-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: none;
+      place-items: center;
+      padding: 1rem;
+      background: rgba(15, 23, 42, 0.55);
+    }
+
+    .pause-overlay.visible {
+      display: grid;
+    }
+
     .start-button {
       padding: 0.7rem 1.2rem;
       border: 1px solid #cbd5e1;
@@ -371,6 +390,32 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
+    }
+
+    .resume-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.8rem 1.2rem;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.96);
+      color: #0f172a;
+      font: inherit;
+      font-size: 1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      box-shadow: 0 0.8rem 1.8rem rgba(15, 23, 42, 0.2);
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    .resume-button svg {
+      width: 1.15rem;
+      height: 1.15rem;
+      fill: currentColor;
+      flex: none;
     }
 
     .game-over-sign {
@@ -497,7 +542,8 @@
             calc((100vw - (2 * var(--page-padding-inline)) - (2 * var(--rail-width)) - (2 * var(--playfield-gap)))));
       }
 
-      .mute-button {
+      .mute-button,
+      .pause-button {
         min-width: 2.55rem;
         height: 2.3rem;
         padding: 0 0.7rem;
@@ -539,6 +585,14 @@
             <div class="start-screen" id="start-screen">
               <button class="start-button" id="start-button" type="button">Start Game</button>
             </div>
+            <div class="pause-overlay" id="pause-overlay" aria-hidden="true">
+              <button class="resume-button" id="resume-button" type="button" aria-label="Resume game">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 6v12l10-6z"></path>
+                </svg>
+                <span>Resume</span>
+              </button>
+            </div>
             <div class="game-over" id="game-over" aria-hidden="true">
               <div class="game-over-sign">Game Over</div>
             </div>
@@ -571,9 +625,14 @@
       </div>
     </div>
     <div class="footer-bar">
-      <button class="mute-button" id="mute-button" type="button" aria-label="Mute music">
-        ♪
-      </button>
+      <div class="footer-controls">
+        <button class="pause-button" id="pause-button" type="button" aria-label="Pause game">
+          &#10074;&#10074;
+        </button>
+        <button class="mute-button" id="mute-button" type="button" aria-label="Mute music">
+          ♪
+        </button>
+      </div>
       <div class="credit" aria-hidden="true">Made by Kepler &amp; Dada.</div>
     </div>
   </main>
@@ -653,6 +712,9 @@
     const settledLayer = document.getElementById("settled-layer");
     const startScreenElement = document.getElementById("start-screen");
     const startButton = document.getElementById("start-button");
+    const pauseOverlayElement = document.getElementById("pause-overlay");
+    const pauseButton = document.getElementById("pause-button");
+    const resumeButton = document.getElementById("resume-button");
     const gameOverElement = document.getElementById("game-over");
     const gameMusic = document.getElementById("game-music");
     const muteButton = document.getElementById("mute-button");
@@ -668,10 +730,13 @@
     let isDropButtonHeld = false;
     let hasGameStarted = false;
     let isGameOver = false;
+    let isPaused = false;
     let activePieceState = null;
     let score = 0;
     let hasWon = false;
     let winToastTimeoutId = null;
+    let activeFallTimeoutId = null;
+    let nextPieceTimeoutId = null;
     const controlRepeatDelayMs = 180;
     const controlRepeatIntervalMs = 90;
     const defaultMusicVolume = 0.4;
@@ -702,7 +767,15 @@
       moveRightButton.disabled = !isEnabled;
     }
 
+    function syncPauseControls() {
+      pauseButton.disabled = !hasGameStarted || isGameOver;
+      pauseButton.setAttribute("aria-label", isPaused ? "Game paused" : "Pause game");
+      pauseOverlayElement.classList.toggle("visible", isPaused);
+      pauseOverlayElement.setAttribute("aria-hidden", isPaused ? "false" : "true");
+    }
+
     setControlsEnabled(false);
+    syncPauseControls();
 
     function getFallDelayMs() {
       if (isDropButtonHeld) {
@@ -887,6 +960,36 @@
       updateScore(completedRows.length * 5);
     }
 
+    function scheduleNextPieceSequence(delayMs = 0) {
+      if (isGameOver || isPaused) {
+        return;
+      }
+
+      if (nextPieceTimeoutId !== null) {
+        window.clearTimeout(nextPieceTimeoutId);
+      }
+
+      nextPieceTimeoutId = window.setTimeout(() => {
+        nextPieceTimeoutId = null;
+        startPieceSequence();
+      }, delayMs);
+    }
+
+    function scheduleActivePieceFall(movePieceDown, delayMs = getFallDelayMs()) {
+      if (isGameOver || isPaused) {
+        return;
+      }
+
+      if (activeFallTimeoutId !== null) {
+        window.clearTimeout(activeFallTimeoutId);
+      }
+
+      activeFallTimeoutId = window.setTimeout(() => {
+        activeFallTimeoutId = null;
+        movePieceDown();
+      }, delayMs);
+    }
+
     function lockPiece(pieceConfig, pieceRow) {
       const pieceCells = getPieceCellPositions(pieceConfig, pieceRow);
 
@@ -903,9 +1006,19 @@
 
     function showGameOver() {
       isGameOver = true;
+      isPaused = false;
+      if (activeFallTimeoutId !== null) {
+        window.clearTimeout(activeFallTimeoutId);
+        activeFallTimeoutId = null;
+      }
+      if (nextPieceTimeoutId !== null) {
+        window.clearTimeout(nextPieceTimeoutId);
+        nextPieceTimeoutId = null;
+      }
       gameOverElement.classList.add("visible");
       gameOverElement.setAttribute("aria-hidden", "false");
       setControlsEnabled(false);
+      syncPauseControls();
     }
 
     function startGame() {
@@ -917,6 +1030,7 @@
       startScreenElement.classList.add("hidden");
       startScreenElement.setAttribute("aria-hidden", "true");
       setControlsEnabled(true);
+      syncPauseControls();
 
       const playPromise = gameMusic.play();
 
@@ -1001,7 +1115,7 @@
     }
 
     function advanceActivePieceOneRow() {
-      if (!activePieceState || isGameOver) {
+      if (!activePieceState || isGameOver || isPaused) {
         return false;
       }
 
@@ -1024,6 +1138,25 @@
       return true;
     }
 
+    function continueActivePieceFall() {
+      activeFallTimeoutId = null;
+
+      if (!activePieceState || isPaused) {
+        return;
+      }
+
+      if (isGameOver || !advanceActivePieceOneRow()) {
+        const finishedPieceState = activePieceState;
+        finishedPieceState.pieceElement.remove();
+        lockPiece(finishedPieceState.pieceConfig, finishedPieceState.pieceRow);
+        activePieceState = null;
+        finishedPieceState.onComplete();
+        return;
+      }
+
+      scheduleActivePieceFall(continueActivePieceFall);
+    }
+
     function dropPiece(pieceConfig, onComplete) {
       const pieceElement = createPieceElement(pieceConfig);
 
@@ -1032,21 +1165,10 @@
         pieceConfig,
         pieceElement,
         pieceRow: pieceConfig.row,
+        onComplete,
       };
 
-      function movePieceDown() {
-        if (isGameOver || !advanceActivePieceOneRow()) {
-          pieceElement.remove();
-          lockPiece(pieceConfig, activePieceState.pieceRow);
-          activePieceState = null;
-          onComplete();
-          return;
-        }
-
-        window.setTimeout(movePieceDown, getFallDelayMs());
-      }
-
-      window.setTimeout(movePieceDown, getFallDelayMs());
+      scheduleActivePieceFall(continueActivePieceFall);
     }
 
     function startPieceSequence() {
@@ -1066,12 +1188,16 @@
           return;
         }
 
-        window.setTimeout(startPieceSequence, 0);
+        if (isPaused) {
+          return;
+        }
+
+        scheduleNextPieceSequence();
       });
     }
 
     function moveActivePiece(columnChange) {
-      if (!activePieceState || isGameOver) {
+      if (!activePieceState || isGameOver || isPaused) {
         return;
       }
 
@@ -1101,7 +1227,7 @@
     }
 
     function rotateActivePiece(direction) {
-      if (!activePieceState || isGameOver) {
+      if (!activePieceState || isGameOver || isPaused) {
         return;
       }
 
@@ -1146,7 +1272,7 @@
     }
 
     function startFastDrop() {
-      if (isGameOver) {
+      if (isGameOver || isPaused) {
         return;
       }
 
@@ -1157,6 +1283,53 @@
     function stopFastDrop() {
       isDropButtonHeld = false;
       dropButton.classList.remove("active");
+    }
+
+    function pauseGame() {
+      if (!hasGameStarted || isGameOver || isPaused) {
+        return;
+      }
+
+      isPaused = true;
+      stopFastDrop();
+
+      if (activeFallTimeoutId !== null) {
+        window.clearTimeout(activeFallTimeoutId);
+        activeFallTimeoutId = null;
+      }
+
+      if (nextPieceTimeoutId !== null) {
+        window.clearTimeout(nextPieceTimeoutId);
+        nextPieceTimeoutId = null;
+      }
+
+      setControlsEnabled(false);
+      syncPauseControls();
+      gameMusic.pause();
+    }
+
+    function resumeGame() {
+      if (!isPaused || isGameOver) {
+        return;
+      }
+
+      isPaused = false;
+      setControlsEnabled(true);
+      syncPauseControls();
+
+      if (activePieceState) {
+        scheduleActivePieceFall(continueActivePieceFall);
+      } else {
+        scheduleNextPieceSequence();
+      }
+
+      const playPromise = gameMusic.play();
+
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(() => {
+          // Ignore playback failures so the game can still resume.
+        });
+      }
     }
 
     function createRepeatingPointerControl(
@@ -1246,6 +1419,14 @@
     muteButton.addEventListener("click", () => {
       gameMusic.muted = !gameMusic.muted;
       syncMusicControls();
+    });
+
+    pauseButton.addEventListener("click", () => {
+      pauseGame();
+    });
+
+    resumeButton.addEventListener("click", () => {
+      resumeGame();
     });
 
     rotateLeftButton.addEventListener("click", () => {
