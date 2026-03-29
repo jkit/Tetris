@@ -32,6 +32,15 @@
       overflow: hidden;
     }
 
+    html,
+    body,
+    body * {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     body {
       margin: 0;
       min-height: 100dvh;
@@ -336,16 +345,19 @@
       background: var(--cell-color, linear-gradient(180deg, #fde68a 0%, #fbbf24 100%));
     }
 
-    .game-over {
+    .game-over,
+    .win-overlay {
       position: absolute;
       inset: 0;
       z-index: 2;
       display: none;
       place-items: center;
+      padding: 1rem;
       background: rgba(15, 23, 42, 0.55);
     }
 
-    .game-over.visible {
+    .game-over.visible,
+    .win-overlay.visible {
       display: grid;
     }
 
@@ -377,123 +389,127 @@
       display: grid;
     }
 
-    .start-button {
-      padding: 0.7rem 1.2rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 0.5rem;
-      background: #ffffff;
-      color: #111827;
-      font: inherit;
-      font-size: 1rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
-    }
-
-    .resume-button {
-      display: inline-flex;
-      align-items: center;
+    .overlay-panel {
+      position: relative;
+      width: min(100%, calc(100% - 1rem));
+      display: grid;
       gap: 0.7rem;
-      padding: 0.8rem 1.2rem;
-      border: 1px solid rgba(255, 255, 255, 0.72);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.96);
-      color: #0f172a;
-      font: inherit;
-      font-size: 1rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      box-shadow: 0 0.8rem 1.8rem rgba(15, 23, 42, 0.2);
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
+      justify-items: center;
+      max-width: 100%;
     }
 
-    .resume-button svg {
-      width: 1.15rem;
-      height: 1.15rem;
-      fill: currentColor;
-      flex: none;
-    }
-
-    .game-over-sign {
+    .overlay-title {
+      width: min(100%, 32rem);
+      max-width: 100%;
+      box-sizing: border-box;
       padding: 1rem 1.2rem;
-      border: 0.28rem solid #f8fafc;
+      border: 0.28rem solid rgba(248, 250, 252, 0.94);
       border-radius: 0.85rem;
-      background: #dc2626;
-      color: #fef2f2;
-      font-size: clamp(1.5rem, 6vw, 2.3rem);
+      color: #f8fafc;
+      font: inherit;
+      font-size: clamp(1.3rem, 5vw, 2.3rem);
       font-weight: 900;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
+      text-align: center;
       text-transform: uppercase;
       box-shadow: 0 0.7rem 1.6rem rgba(15, 23, 42, 0.35);
+      text-shadow: 0 2px 12px rgba(15, 23, 42, 0.28);
     }
 
-    .win-toast {
-      position: fixed;
-      top: calc(1rem + env(safe-area-inset-top));
-      left: 50%;
-      z-index: 4;
-      transform: translate(-50%, -1rem);
-      display: inline-flex;
-      align-items: center;
-      gap: 0.7rem;
-      padding: 0.95rem 1.4rem;
-      border: 2px solid rgba(255, 255, 255, 0.75);
-      border-radius: 999px;
+    .overlay-title.start-title {
+      background: linear-gradient(135deg, #2563eb 0%, #0891b2 100%);
+    }
+
+    .overlay-title.pause-title {
+      background: linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%);
+    }
+
+    .overlay-title.game-over-sign {
+      background: #dc2626;
+      color: #fef2f2;
+    }
+
+    .overlay-title.win-title {
       background:
-        radial-gradient(circle at top left, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.1) 32%, transparent 52%),
-        linear-gradient(135deg, rgba(244, 114, 182, 0.96) 0%, rgba(249, 115, 22, 0.96) 38%, rgba(250, 204, 21, 0.97) 68%, rgba(45, 212, 191, 0.96) 100%);
-      color: #fffaf0;
-      box-shadow:
-        0 0 0 0.2rem rgba(255, 255, 255, 0.22),
-        0 1rem 2.4rem rgba(217, 70, 239, 0.24),
-        0 0.35rem 0.9rem rgba(15, 23, 42, 0.16);
-      backdrop-filter: blur(10px);
-      font-size: 1.02rem;
-      font-weight: 900;
-      letter-spacing: 0.08em;
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.34) 0%, transparent 42%),
+        linear-gradient(135deg, #db2777 0%, #f97316 42%, #facc15 72%, #14b8a6 100%);
+      color: #fff7ed;
+    }
+
+    .overlay-button {
+      appearance: none;
+      cursor: pointer;
+      background-clip: padding-box;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    .overlay-button:focus-visible {
+      outline: 0.2rem solid rgba(255, 255, 255, 0.98);
+      outline-offset: 0.18rem;
+    }
+
+    .overlay-hint {
+      margin: 0;
+      color: rgba(248, 250, 252, 0.92);
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      max-width: 15rem;
+      text-align: center;
       text-transform: uppercase;
-      text-shadow: 0 2px 10px rgba(124, 45, 18, 0.28);
-      opacity: 0;
-      pointer-events: none;
-      transition:
-        opacity 220ms ease,
-        transform 220ms ease;
+      text-shadow: 0 1px 8px rgba(15, 23, 42, 0.35);
     }
 
-    .win-toast.visible {
-      opacity: 1;
-      transform: translate(-50%, 0);
-      animation: win-toast-bob 900ms ease-in-out infinite alternate;
+    .win-overlay {
+      z-index: 4;
+      cursor: pointer;
     }
 
-    .win-toast::before,
-    .win-toast::after {
-      font-size: 1.15rem;
-      line-height: 1;
-      filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.32));
+    .win-overlay .overlay-panel {
+      gap: 0.8rem;
     }
 
-    .win-toast::before {
-      content: "★";
-      color: #fef08a;
+    .win-overlay .overlay-panel::before,
+    .win-overlay .overlay-panel::after {
+      content: "";
+      position: absolute;
+      width: 0.9rem;
+      height: 0.9rem;
+      border-radius: 999px;
+      background: rgba(254, 240, 138, 0.95);
+      box-shadow:
+        0 0 0 0.22rem rgba(255, 255, 255, 0.22),
+        0 0 1rem rgba(250, 204, 21, 0.72);
     }
 
-    .win-toast::after {
-      content: "✦";
-      color: #d9f99d;
+    .win-overlay .overlay-panel::before {
+      top: 1rem;
+      left: 1rem;
     }
 
-    @keyframes win-toast-bob {
+    .win-overlay .overlay-panel::after {
+      right: 1rem;
+      bottom: 4rem;
+      background: rgba(153, 246, 228, 0.95);
+      box-shadow:
+        0 0 0 0.22rem rgba(255, 255, 255, 0.22),
+        0 0 1rem rgba(45, 212, 191, 0.72);
+    }
+
+    .win-overlay .overlay-title {
+      animation: win-title-bob 900ms ease-in-out infinite alternate;
+    }
+
+    @keyframes win-title-bob {
       from {
-        transform: translate(-50%, -0.15rem) scale(1);
+        transform: translateY(-0.1rem) scale(1);
       }
 
       to {
-        transform: translate(-50%, 0.18rem) scale(1.03);
+        transform: translateY(0.14rem) scale(1.02);
       }
     }
 
@@ -583,18 +599,25 @@
           <div class="stage" id="stage">
             <div id="settled-layer"></div>
             <div class="start-screen" id="start-screen">
-              <button class="start-button" id="start-button" type="button">Start Game</button>
+              <div class="overlay-panel">
+                <button class="overlay-title overlay-button start-title" id="start-button" type="button">Start Game</button>
+              </div>
             </div>
             <div class="pause-overlay" id="pause-overlay" aria-hidden="true">
-              <button class="resume-button" id="resume-button" type="button" aria-label="Resume game">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M8 6v12l10-6z"></path>
-                </svg>
-                <span>Resume</span>
-              </button>
+              <div class="overlay-panel">
+                <button class="overlay-title overlay-button pause-title" id="resume-button" type="button" aria-label="Resume game">Resume Game</button>
+              </div>
             </div>
             <div class="game-over" id="game-over" aria-hidden="true">
-              <div class="game-over-sign">Game Over</div>
+              <div class="overlay-panel">
+                <div class="overlay-title game-over-sign">Game Over</div>
+              </div>
+            </div>
+            <div class="win-overlay" id="win-overlay" aria-hidden="true">
+              <div class="overlay-panel">
+                <div class="overlay-title win-title">You Win</div>
+                <p class="overlay-hint">Tap or press Options to keep playing</p>
+              </div>
             </div>
           </div>
         </section>
@@ -637,8 +660,6 @@
     </div>
   </main>
   <audio id="game-music" src="music.mp3" loop preload="auto"></audio>
-  <div class="win-toast" id="win-toast" role="status" aria-live="polite">You win!</div>
-
   <script>
     const gameConfig = {
       stageColumns: 10,
@@ -719,7 +740,7 @@
     const gameMusic = document.getElementById("game-music");
     const muteButton = document.getElementById("mute-button");
     const scoreValueElement = document.getElementById("score-value");
-    const winToastElement = document.getElementById("win-toast");
+    const winOverlayElement = document.getElementById("win-overlay");
     const dropButton = document.getElementById("drop-button");
     const rotateLeftButton = document.getElementById("rotate-left");
     const rotateRightButton = document.getElementById("rotate-right");
@@ -734,12 +755,22 @@
     let activePieceState = null;
     let score = 0;
     let hasWon = false;
-    let winToastTimeoutId = null;
+    let isWinOverlayVisible = false;
     let activeFallTimeoutId = null;
     let nextPieceTimeoutId = null;
     const controlRepeatDelayMs = 180;
     const controlRepeatIntervalMs = 90;
     const defaultMusicVolume = 0.4;
+    const gamepadButtonMap = {
+      options: 9,
+      rotateRight: 1,
+      rotateLeft: 2,
+      dpadDown: 13,
+      dpadLeft: 14,
+      dpadRight: 15,
+    };
+    const activeGamepadControls = new Map();
+    let gamepadPollFrameId = null;
 
     stage.style.setProperty("--stage-columns", gameConfig.stageColumns);
     stage.style.setProperty("--stage-rows", gameConfig.stageRows);
@@ -770,8 +801,11 @@
     function syncPauseControls() {
       pauseButton.disabled = !hasGameStarted || isGameOver;
       pauseButton.setAttribute("aria-label", isPaused ? "Game paused" : "Pause game");
-      pauseOverlayElement.classList.toggle("visible", isPaused);
-      pauseOverlayElement.setAttribute("aria-hidden", isPaused ? "false" : "true");
+      const showPauseOverlay = isPaused && !isWinOverlayVisible;
+      pauseOverlayElement.classList.toggle("visible", showPauseOverlay);
+      pauseOverlayElement.setAttribute("aria-hidden", showPauseOverlay ? "false" : "true");
+      winOverlayElement.classList.toggle("visible", isWinOverlayVisible);
+      winOverlayElement.setAttribute("aria-hidden", isWinOverlayVisible ? "false" : "true");
     }
 
     setControlsEnabled(false);
@@ -897,21 +931,32 @@
 
       if (!hasWon && score >= 100) {
         hasWon = true;
-        showWinToast();
+        showWinOverlay();
       }
     }
 
-    function showWinToast() {
-      winToastElement.classList.add("visible");
-
-      if (winToastTimeoutId !== null) {
-        window.clearTimeout(winToastTimeoutId);
+    function showWinOverlay() {
+      if (isGameOver || isWinOverlayVisible) {
+        return;
       }
 
-      winToastTimeoutId = window.setTimeout(() => {
-        winToastElement.classList.remove("visible");
-        winToastTimeoutId = null;
-      }, 10000);
+      isPaused = true;
+      isWinOverlayVisible = true;
+      stopFastDrop();
+
+      if (activeFallTimeoutId !== null) {
+        window.clearTimeout(activeFallTimeoutId);
+        activeFallTimeoutId = null;
+      }
+
+      if (nextPieceTimeoutId !== null) {
+        window.clearTimeout(nextPieceTimeoutId);
+        nextPieceTimeoutId = null;
+      }
+
+      setControlsEnabled(false);
+      syncPauseControls();
+      gameMusic.pause();
     }
 
     function clearCompletedRows() {
@@ -1007,6 +1052,7 @@
     function showGameOver() {
       isGameOver = true;
       isPaused = false;
+      isWinOverlayVisible = false;
       if (activeFallTimeoutId !== null) {
         window.clearTimeout(activeFallTimeoutId);
         activeFallTimeoutId = null;
@@ -1272,17 +1318,25 @@
     }
 
     function startFastDrop() {
-      if (isGameOver || isPaused) {
+      if (!activePieceState || isGameOver || isPaused) {
         return;
       }
 
       isDropButtonHeld = true;
       dropButton.classList.add("active");
+      scheduleActivePieceFall(continueActivePieceFall);
     }
 
     function stopFastDrop() {
+      const wasDropHeld = isDropButtonHeld;
       isDropButtonHeld = false;
       dropButton.classList.remove("active");
+
+      if (!wasDropHeld || !activePieceState || isGameOver || isPaused) {
+        return;
+      }
+
+      scheduleActivePieceFall(continueActivePieceFall);
     }
 
     function pauseGame() {
@@ -1314,6 +1368,7 @@
       }
 
       isPaused = false;
+      isWinOverlayVisible = false;
       setControlsEnabled(true);
       syncPauseControls();
 
@@ -1332,16 +1387,16 @@
       }
     }
 
-    function createRepeatingPointerControl(
-      button,
+    function createPressControl(
       onTap,
       onHoldStart,
       onHoldEnd,
-      shouldRepeatTapOnHold = true
+      shouldRepeatTapOnHold = true,
+      holdDelayMs = controlRepeatDelayMs
     ) {
       let repeatDelayTimeoutId = null;
       let repeatIntervalId = null;
-      let activePointerId = null;
+      let isPressed = false;
 
       function clearRepeatTimers() {
         if (repeatDelayTimeoutId !== null) {
@@ -1355,33 +1410,16 @@
         }
       }
 
-      function endPress(pointerId) {
-        if (activePointerId !== null && pointerId !== undefined && pointerId !== activePointerId) {
+      function press() {
+        if (isPressed) {
           return;
         }
 
-        clearRepeatTimers();
-        activePointerId = null;
-
-        if (onHoldEnd) {
-          onHoldEnd();
-        }
-      }
-
-      button.addEventListener("pointerdown", (event) => {
-        if (event.button !== 0 || activePointerId !== null) {
-          return;
-        }
-
-        event.preventDefault();
-        activePointerId = event.pointerId;
-        if (button.setPointerCapture) {
-          button.setPointerCapture(event.pointerId);
-        }
+        isPressed = true;
         onTap();
 
         repeatDelayTimeoutId = window.setTimeout(() => {
-          if (activePointerId !== event.pointerId) {
+          if (!isPressed) {
             return;
           }
 
@@ -1394,14 +1432,72 @@
           }
 
           repeatIntervalId = window.setInterval(() => {
-            if (activePointerId !== event.pointerId) {
+            if (!isPressed) {
               return;
             }
 
             onTap();
           }, controlRepeatIntervalMs);
-        }, controlRepeatDelayMs);
+        }, holdDelayMs);
+      }
+
+      function release() {
+        if (!isPressed) {
+          return;
+        }
+
+        isPressed = false;
+        clearRepeatTimers();
+
+        if (onHoldEnd) {
+          onHoldEnd();
+        }
+      }
+
+      return {
+        press,
+        release,
+      };
+    }
+
+    function createRepeatingPointerControl(
+      button,
+      onTap,
+      onHoldStart,
+      onHoldEnd,
+      shouldRepeatTapOnHold = true,
+      holdDelayMs = controlRepeatDelayMs
+    ) {
+      const pressControl = createPressControl(
+        onTap,
+        onHoldStart,
+        onHoldEnd,
+        shouldRepeatTapOnHold,
+        holdDelayMs
+      );
+      let activePointerId = null;
+
+      button.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0 || activePointerId !== null) {
+          return;
+        }
+
+        event.preventDefault();
+        activePointerId = event.pointerId;
+        if (button.setPointerCapture) {
+          button.setPointerCapture(event.pointerId);
+        }
+        pressControl.press();
       });
+
+      function endPress(pointerId) {
+        if (activePointerId !== null && pointerId !== undefined && pointerId !== activePointerId) {
+          return;
+        }
+
+        activePointerId = null;
+        pressControl.release();
+      }
 
       button.addEventListener("pointerup", (event) => {
         endPress(event.pointerId);
@@ -1414,6 +1510,103 @@
       button.addEventListener("lostpointercapture", () => {
         endPress();
       });
+
+      return pressControl;
+    }
+
+    function setGamepadControlState(controlName, isPressed) {
+      const control = activeGamepadControls.get(controlName);
+
+      if (!control) {
+        return;
+      }
+
+      if (isPressed) {
+        control.press();
+      } else {
+        control.release();
+      }
+    }
+
+    function releaseAllGamepadControls() {
+      for (const control of activeGamepadControls.values()) {
+        control.release();
+      }
+    }
+
+    function getGamepadButtonPressed(gamepad, buttonIndex) {
+      const button = gamepad?.buttons?.[buttonIndex];
+      return Boolean(button && button.pressed);
+    }
+
+    function pollGamepads() {
+      const connectedGamepads =
+        typeof navigator.getGamepads === "function"
+          ? Array.from(navigator.getGamepads()).filter(Boolean)
+          : [];
+
+      if (connectedGamepads.length === 0) {
+        releaseAllGamepadControls();
+        gamepadPollFrameId = null;
+        return;
+      }
+
+      const activeGamepad = connectedGamepads[0];
+
+      setGamepadControlState(
+        "moveLeft",
+        getGamepadButtonPressed(activeGamepad, gamepadButtonMap.dpadLeft)
+      );
+      setGamepadControlState(
+        "moveRight",
+        getGamepadButtonPressed(activeGamepad, gamepadButtonMap.dpadRight)
+      );
+      setGamepadControlState(
+        "drop",
+        getGamepadButtonPressed(activeGamepad, gamepadButtonMap.dpadDown)
+      );
+      setGamepadControlState(
+        "rotateLeft",
+        getGamepadButtonPressed(activeGamepad, gamepadButtonMap.rotateLeft)
+      );
+      setGamepadControlState(
+        "rotateRight",
+        getGamepadButtonPressed(activeGamepad, gamepadButtonMap.rotateRight)
+      );
+      setGamepadControlState(
+        "menu",
+        getGamepadButtonPressed(activeGamepad, gamepadButtonMap.options)
+      );
+
+      gamepadPollFrameId = window.requestAnimationFrame(pollGamepads);
+    }
+
+    function startGamepadPolling() {
+      if (gamepadPollFrameId !== null) {
+        return;
+      }
+
+      gamepadPollFrameId = window.requestAnimationFrame(pollGamepads);
+    }
+
+    function handleGamepadMenuButton() {
+      if (!hasGameStarted) {
+        startButton.click();
+        return;
+      }
+
+      if (isGameOver) {
+        return;
+      }
+
+      if (isPaused) {
+        resumeButton.click();
+        return;
+      }
+
+      if (!pauseButton.disabled) {
+        pauseButton.click();
+      }
     }
 
     muteButton.addEventListener("click", () => {
@@ -1429,6 +1622,10 @@
       resumeGame();
     });
 
+    winOverlayElement.addEventListener("click", () => {
+      resumeGame();
+    });
+
     rotateLeftButton.addEventListener("click", () => {
       rotateActivePiece("left");
     });
@@ -1441,21 +1638,29 @@
       startGame();
     });
 
-    createRepeatingPointerControl(
+    activeGamepadControls.set(
+      "moveLeft",
+      createRepeatingPointerControl(
       moveLeftButton,
       () => {
         moveActivePiece(-1);
       }
+      )
     );
 
-    createRepeatingPointerControl(
+    activeGamepadControls.set(
+      "moveRight",
+      createRepeatingPointerControl(
       moveRightButton,
       () => {
         moveActivePiece(1);
       }
+      )
     );
 
-    createRepeatingPointerControl(
+    activeGamepadControls.set(
+      "drop",
+      createRepeatingPointerControl(
       dropButton,
       () => {
         advanceActivePieceOneRow();
@@ -1466,12 +1671,45 @@
       () => {
         stopFastDrop();
       },
-      false
+      false,
+      0
+      )
+    );
+
+    activeGamepadControls.set(
+      "rotateLeft",
+      createPressControl(() => {
+        rotateActivePiece("left");
+      })
+    );
+
+    activeGamepadControls.set(
+      "rotateRight",
+      createPressControl(() => {
+        rotateActivePiece("right");
+      })
+    );
+
+    activeGamepadControls.set(
+      "menu",
+      createPressControl(() => {
+        handleGamepadMenuButton();
+      }, null, null, false)
     );
 
     dropButton.addEventListener("contextmenu", (event) => {
       event.preventDefault();
     });
+
+    window.addEventListener("gamepadconnected", () => {
+      startGamepadPolling();
+    });
+
+    window.addEventListener("gamepaddisconnected", () => {
+      releaseAllGamepadControls();
+    });
+
+    startGamepadPolling();
   </script>
 </body>
 
